@@ -1,5 +1,5 @@
 //@version=6
-indicator("Advanced Harmonic Patterns (Bullish & Bearish) + Predictions + Price Range", overlay=true, max_lines_count=500, max_labels_count=500)
+indicator("Harmonic Patterns: Always show partial pattern at 4 pivots + predict D", overlay=true, max_lines_count=500, max_labels_count=500)
 
 // 1. Ustawienia / Inputs
 pivotLen            = input.int(5, "Długość pivota", minval=1)
@@ -14,14 +14,13 @@ onlyLastPattern     = input.bool(false, "Only Last Pattern?")
 
 // Dodatkowe parametry do predykcji
 useConfluence       = input.bool(true, "Używaj prostej konfluencji Fibo przy predykcji D?")
-extendedFiboLevels  = input.bool(true, "Pokazuj dodatkowe potencjalne poziomy D? (np. 0.78, 0.79, itp.)")
+extendedFiboLevels  = input.bool(true, "Pokazuj dodatkowe potencjalne poziomy D?")
 
 // Parametr dla stref (pasów) cenowych
-rangePercent        = input.float(2.0, "Procent 'pasa' wokół targetu/predykcji (%)", step=0.1)
-// np. 2.0 -> strefa ±2% wokół targetPrice / predictedD
+rangePercent        = input.float(2.0, "Procent strefy wokół targetu/predykcji (%)", step=0.1)
 
-// ---------------------------------------------------------------------------------
-// Funkcja do rozmiaru etykiet - jednolinijkowo
+// ---------------------------------------------------------------------
+// Funkcja do rozmiaru etykiet – jednolinijkowo
 f_getLabelSize(sz) => sz == "tiny" ? size.tiny : sz == "small" ? size.small : sz == "normal" ? size.normal : size.large
 labelSize = f_getLabelSize(labelSizeChoice)
 
@@ -33,6 +32,7 @@ var pivotsTime   = array.new_int()
 ph = ta.pivothigh(high, pivotLen, pivotLen)
 pl = ta.pivotlow(low, pivotLen, pivotLen)
 
+// Wieloliniowe if-y (bez then)
 if not na(ph)
     array.push(pivots, ph)
     array.push(pivotsBars, bar_index - pivotLen)
@@ -64,29 +64,23 @@ f_clearObjects() =>
 // ------------------- Funkcje RYSUJĄCE / pomocnicze --------------------
 // ---------------------------------------------------------------------
 
-// Rysowanie PEŁNEJ formacji
+// Rysowanie PEŁNEJ formacji (X->A->B->C->D)
 f_drawPattern(_title, _col, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_time, A_time, B_time, C_time, D_time, ratioAB, ratioBC, ratioCD, ratioXD) =>
+    // Linie
     lXA = line.new(X_bar, X, A_bar, A, color=_col, width=2)
     lAB = line.new(A_bar, A, B_bar, B, color=_col, width=2)
     lBC = line.new(B_bar, B, C_bar, C, color=_col, width=2)
     lCD = line.new(C_bar, C, D_bar, D, color=_col, width=2)
     lDX = line.new(D_bar, D, X_bar, X, color=_col, width=2)
-    array.push(lines, lXA)
-    array.push(lines, lAB)
-    array.push(lines, lBC)
-    array.push(lines, lCD)
-    array.push(lines, lDX)
+    array.push(lines, lXA), array.push(lines, lAB), array.push(lines, lBC), array.push(lines, lCD), array.push(lines, lDX)
 
+    // Etykiety X, A, B, C, D
     lblX = label.new(X_bar, X + labelOffset, "X", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
     lblA = label.new(A_bar, A + labelOffset, "A", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
     lblB = label.new(B_bar, B + labelOffset, "B", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
     lblC = label.new(C_bar, C + labelOffset, "C", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
     lblD = label.new(D_bar, D + labelOffset, "D", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
-    array.push(labels, lblX)
-    array.push(labels, lblA)
-    array.push(labels, lblB)
-    array.push(labels, lblC)
-    array.push(labels, lblD)
+    array.push(labels, lblX), array.push(labels, lblA), array.push(labels, lblB), array.push(labels, lblC), array.push(labels, lblD)
 
     if showPatternFill
         linefill.new(lXA, lAB, color.new(_col, 85))
@@ -99,6 +93,7 @@ f_drawPattern(_title, _col, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_
     lblTitle = label.new(int(midTime), midPrice, _title, style=label.style_label_upper_right, xloc=xloc.bar_time, color=color.new(_col, 0), textcolor=color.white, size=labelSize)
     array.push(labels, lblTitle)
 
+    // Ratio labels?
     if showRatioLabels
         if combineRatioLabels
             ratioText = str.format("AB/XA={0}\nBC/AB={1}\nCD/BC={2}\nXD/XA={3}",str.tostring(ratioAB, format.mintick),str.tostring(ratioBC, format.mintick),str.tostring(ratioCD, format.mintick),str.tostring(ratioXD, format.mintick))
@@ -111,27 +106,46 @@ f_drawPattern(_title, _col, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_
             lblBC = label.new(int((B_time + C_time) / 2), (B + C) / 2, "BC/AB=" + str.tostring(ratioBC, format.mintick), style=label.style_label_lower_right, xloc=xloc.bar_time, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
             lblCD = label.new(int((C_time + D_time) / 2), (C + D) / 2, "CD/BC=" + str.tostring(ratioCD, format.mintick), style=label.style_label_lower_right, xloc=xloc.bar_time, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
             lblXD = label.new(int((D_time + X_time) / 2), (D + X) / 2, "XD/XA=" + str.tostring(ratioXD, format.mintick), style=label.style_label_lower_right, xloc=xloc.bar_time, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
-            array.push(labels, lblAB)
-            array.push(labels, lblBC)
-            array.push(labels, lblCD)
-            array.push(labels, lblXD)
+            array.push(labels, lblAB), array.push(labels, lblBC), array.push(labels, lblCD), array.push(labels, lblXD)
 
-// Funkcja rysująca (predykcja) punktu D
-f_drawPredictedD(_title, _col, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predD_bar) =>
-    l = line.new(C_bar, C, predD_bar, predD, color=_col, style=line.style_dotted, width=2)
-    array.push(lines, l)
-    lbl = label.new(predD_bar, predD, _title + "\nPredicted D", style=label.style_label_upper_right, xloc=xloc.bar_index, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
-    array.push(labels, lbl)
+// Rysowanie *częściowego* patternu (X->A->B->C) + tytuł
+f_drawPartialPatternUpToC(_title, _col, X, A, B, C, X_bar, A_bar, B_bar, C_bar) =>
+    // Linie
+    lXA = line.new(X_bar, X, A_bar, A, color=_col, width=2)
+    lAB = line.new(A_bar, A, B_bar, B, color=_col, width=2)
+    lBC = line.new(B_bar, B, C_bar, C, color=_col, width=2)
+    array.push(lines, lXA), array.push(lines, lAB), array.push(lines, lBC)
 
-// ---- Funkcja rysująca STREFĘ (±rangePercent) wokół jakiejś ceny ----
+    // Etykiety
+    lblX = label.new(X_bar, X + labelOffset, "X", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
+    lblA = label.new(A_bar, A + labelOffset, "A", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
+    lblB = label.new(B_bar, B + labelOffset, "B", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
+    lblC = label.new(C_bar, C + labelOffset, "C", style=label.style_label_left, yloc=yloc.abovebar, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
+    array.push(labels, lblX), array.push(labels, lblA), array.push(labels, lblB), array.push(labels, lblC)
+
+    // Tytuł w połowie
+    midPrice = (X + A + B + C) / 4.0
+    midBarIndex = math.round((X_bar + A_bar + B_bar + C_bar) / 4)
+    lblTitle = label.new(midBarIndex, midPrice, _title, style=label.style_label_upper_right, xloc=xloc.bar_index, color=color.new(_col, 0), textcolor=color.white, size=labelSize)
+    array.push(labels, lblTitle)
+
+// Funkcja do rysowania STREFY (±rangePercent) wokół ceny
 f_drawRangeAroundPrice(_barIndex, _price, _color, _pct) =>
-    // Tworzymy linie przerywane "góra" i "dół" w odległości ±_pct%
     lowPrice  = _price * (1.0 - _pct/100.0)
     highPrice = _price * (1.0 + _pct/100.0)
     lineLow   = line.new(_barIndex, lowPrice, bar_index, lowPrice, color=color.new(_color, 0), style=line.style_dotted, width=1, extend=extend.right)
     lineHigh  = line.new(_barIndex, highPrice, bar_index, highPrice, color=color.new(_color, 0), style=line.style_dotted, width=1, extend=extend.right)
-    // Ewentualne wypełnienie:
     linefill.new(lineLow, lineHigh, color.new(_color, 85))
+
+
+// ------------------- Definicja f_drawPredictedD(...) -------------------
+f_drawPredictedD(_title, _col, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predD_bar) =>
+    // Rysujemy linię od punktu C do przewidywanego D
+    l = line.new(C_bar, C, predD_bar, predD, color=_col, style=line.style_dotted, width=2)
+    array.push(lines, l)
+    // Dodajemy etykietę "Predicted D"
+    lbl = label.new(predD_bar, predD, _title + "\nPredicted D", style=label.style_label_upper_right,xloc=xloc.bar_index, color=color.new(_col, 0), textcolor=color.white, size=size.tiny)
+    array.push(labels, lbl)
 
 // ---------------------------------------------------------------------
 // ------------------- Funkcje sprawdzające kierunek --------------------
@@ -176,26 +190,25 @@ if array.size(pivots) == 5
     ratioCD = BC != 0 ? CD / BC : na
     ratioXD = XA != 0 ? XD / XA : na
 
-    // Warunki
     isGartley   = (ratioAB >= (0.618 - tol) and ratioAB <= (0.618 + tol)) and (ratioBC >= (0.382 - tol) and ratioBC <= (0.886 + tol)) and (ratioXD >= (0.786 - tol) and ratioXD <= (0.786 + tol))
     isBat       = (ratioAB >= (0.382 - tol) and ratioAB <= (0.50 + tol))  and (ratioBC >= (0.382 - tol) and ratioBC <= (0.886 + tol)) and (ratioXD >= (0.886 - tol) and ratioXD <= (0.886 + tol))
     isButterfly = (ratioAB >= (0.786 - tol) and ratioAB <= (0.786 + tol)) and (ratioBC >= (0.382 - tol) and ratioBC <= (0.886 + tol)) and (ratioXD >= (1.27 - tol) and ratioXD <= (1.27 + tol))
 
+    // Shark
     predictedCShark = if X > A
         X - 1.13 * (X - A)
     else
         X + 1.13 * (A - X)
     isShark = (ratioAB >= (0.5 - tol) and ratioAB <= (0.5 + tol)) and (math.abs(D - predictedCShark) <= tol * math.abs(predictedCShark))
 
-    // --- Rysowanie formacji + target + strefa wokół target ---
+    // Rysowanie formacji + target
     if isBullish and isGartley
         f_drawPattern("Bullish Gartley", color.green, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_time, A_time, B_time, C_time, D_time, ratioAB, ratioBC, ratioCD, ratioXD)
         targetPrice = if X > A
             X - 0.786 * (X - A)
         else
             X + 0.786 * (A - X)
-        newLine = line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.green, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
+        line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.green, style=line.style_dotted, width=2, extend=extend.right)
         f_drawRangeAroundPrice(D_bar, targetPrice, color.green, rangePercent)
 
     if isBullish and isBat
@@ -204,8 +217,7 @@ if array.size(pivots) == 5
             X - 0.886 * (X - A)
         else
             X + 0.886 * (A - X)
-        newLine = line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.blue, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
+        line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.blue, style=line.style_dotted, width=2, extend=extend.right)
         f_drawRangeAroundPrice(D_bar, targetPrice, color.blue, rangePercent)
 
     if isBullish and isButterfly
@@ -214,26 +226,22 @@ if array.size(pivots) == 5
             X - 1.27 * (X - A)
         else
             X + 1.27 * (A - X)
-        newLine = line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.orange, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
+        line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.orange, style=line.style_dotted, width=2, extend=extend.right)
         f_drawRangeAroundPrice(D_bar, targetPrice, color.orange, rangePercent)
 
     if isBullish and isShark
         f_drawPattern("Bullish Shark", color.purple, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_time, A_time, B_time, C_time, D_time, ratioAB, ratioBC, ratioCD, ratioXD)
-        targetPriceShark = predictedCShark
-        newLine = line.new(D_bar, targetPriceShark, bar_index, targetPriceShark, color=color.purple, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
-        f_drawRangeAroundPrice(D_bar, targetPriceShark, color.purple, rangePercent)
+        line.new(D_bar, predictedCShark, bar_index, predictedCShark, color=color.purple, style=line.style_dotted, width=2, extend=extend.right)
+        f_drawRangeAroundPrice(D_bar, predictedCShark, color.purple, rangePercent)
 
-    // Bearish:
+    // Bearish analogicznie
     if isBearish and isGartley
         f_drawPattern("Bearish Gartley", color.red, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_time, A_time, B_time, C_time, D_time, ratioAB, ratioBC, ratioCD, ratioXD)
         targetPrice = if X < A
             X + 0.786 * (A - X)
         else
             X - 0.786 * (X - A)
-        newLine = line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.red, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
+        line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.red, style=line.style_dotted, width=2, extend=extend.right)
         f_drawRangeAroundPrice(D_bar, targetPrice, color.red, rangePercent)
 
     if isBearish and isBat
@@ -242,8 +250,7 @@ if array.size(pivots) == 5
             X + 0.886 * (A - X)
         else
             X - 0.886 * (X - A)
-        newLine = line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.maroon, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
+        line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.maroon, style=line.style_dotted, width=2, extend=extend.right)
         f_drawRangeAroundPrice(D_bar, targetPrice, color.maroon, rangePercent)
 
     if isBearish and isButterfly
@@ -252,23 +259,20 @@ if array.size(pivots) == 5
             X + 1.27 * (A - X)
         else
             X - 1.27 * (X - A)
-        newLine = line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.fuchsia, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
+        line.new(D_bar, targetPrice, bar_index, targetPrice, color=color.fuchsia, style=line.style_dotted, width=2, extend=extend.right)
         f_drawRangeAroundPrice(D_bar, targetPrice, color.fuchsia, rangePercent)
 
     if isBearish and isShark
         f_drawPattern("Bearish Shark", color.navy, X, A, B, C, D, X_bar, A_bar, B_bar, C_bar, D_bar, X_time, A_time, B_time, C_time, D_time, ratioAB, ratioBC, ratioCD, ratioXD)
-        targetPriceShark = predictedCShark
-        newLine = line.new(D_bar, targetPriceShark, bar_index, targetPriceShark, color=color.navy, style=line.style_dotted, width=2, extend=extend.right)
-        array.push(lines, newLine)
-        f_drawRangeAroundPrice(D_bar, targetPriceShark, color.navy, rangePercent)
+        line.new(D_bar, predictedCShark, bar_index, predictedCShark, color=color.navy, style=line.style_dotted, width=2, extend=extend.right)
+        f_drawRangeAroundPrice(D_bar, predictedCShark, color.navy, rangePercent)
 
 // ---------------------------------------------------------------------
-// -------------------- Detekcja NIEPEŁNA (4 pivoty) --------------------
-// ------------------------- PREDYKCJE punktu D -------------------------
+// ----------- 6. Wykrywanie NIEPEŁNYCH (4 pivoty) => PREDYKCJA --------
+// --- RYSUJEMY już pattern (X->A->B->C) i gdzie może być punkt D -------
 // ---------------------------------------------------------------------
 else if array.size(pivots) == 4
-    // if onlyLastPattern then f_clearObjects()
+    // ewentualnie if onlyLastPattern then f_clearObjects()
 
     X     = array.get(pivots, 0)
     A     = array.get(pivots, 1)
@@ -280,13 +284,25 @@ else if array.size(pivots) == 4
     C_bar = array.get(pivotsBars, 3)
     predictedD_bar = bar_index + 1  
 
+    // Kierunek
     isBullish = f_validBullishSequence(X, A, B, C)
     isBearish = f_validBearishSequence(X, A, B, C)
+
+    // NAJPIERW rysujemy *częściowy* pattern X->A->B->C
+    // bo C dotarł już do właściwego zasięgu
+    colorPartialBull = color.green
+    colorPartialBear = color.red
+
+    // Możesz sam zdecydować, czy rysujemy "zielony" / "czerwony"
+    // czy inny np. "szary" — tutaj przyjmujemy, że bull/bear mają swoje kolory.
+    if isBullish
+        f_drawPartialPatternUpToC("Partial Bullish Pattern", colorPartialBull, X, A, B, C, X_bar, A_bar, B_bar, C_bar)
+    else if isBearish
+        f_drawPartialPatternUpToC("Partial Bearish Pattern", colorPartialBear, X, A, B, C, X_bar, A_bar, B_bar, C_bar)
 
     XA = math.abs(A - X)
     AB = math.abs(B - A)
     BC = math.abs(C - B)
-
     ratioAB = XA != 0 ? AB / XA : na
     ratioBC = AB != 0 ? BC / AB : na
 
@@ -320,25 +336,23 @@ else if array.size(pivots) == 4
                 else
                     (C + confluenceSize)
 
-            // CONFLUENCE
             if useConfluence and not na(predConfluence)
                 avgD = (predD + predConfluence) / 2.0
-
                 if isBullish
-                    f_drawPredictedD("Potential Bullish Gartley (conf.)", color.new(color.green, 0), X, A, B, C, avgD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    // Rysowanie strefy wokół avgD
-                    f_drawRangeAroundPrice(predictedD_bar, avgD, color.green, rangePercent)
+                    f_drawPredictedD("Potential Bullish Gartley (conf.)", colorPartialBull, X, A, B, C, avgD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, avgD, colorPartialBull, rangePercent)
                 if isBearish
-                    f_drawPredictedD("Potential Bearish Gartley (conf.)", color.new(color.red, 0), X, A, B, C, avgD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, avgD, color.red, rangePercent)
+                    f_drawPredictedD("Potential Bearish Gartley (conf.)", colorPartialBear, X, A, B, C, avgD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, avgD, colorPartialBear, rangePercent)
             else
                 if isBullish
-                    f_drawPredictedD("Potential Bullish Gartley", color.new(color.green, 0), X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, predD, color.green, rangePercent)
+                    f_drawPredictedD("Potential Bullish Gartley", colorPartialBull, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, predD, colorPartialBull, rangePercent)
                 if isBearish
-                    f_drawPredictedD("Potential Bearish Gartley", color.new(color.red, 0), X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, predD, color.red, rangePercent)
+                    f_drawPredictedD("Potential Bearish Gartley", colorPartialBear, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, predD, colorPartialBear, rangePercent)
 
+    // Analogicznie Bat, Butterfly, Shark...
     // -------------------- PREDYKCYJNY BAT -----------------------------
     isPotentialBat = (ratioAB >= (0.382 - tol) and ratioAB <= (0.50 + tol)) and (ratioBC >= (0.382 - tol) and ratioBC <= (0.886 + tol))
     bcFillBat = (ratioBC - (0.382 - tol)) / ((0.886 + tol) - (0.382 - tol))
@@ -367,18 +381,18 @@ else if array.size(pivots) == 4
                 if not na(confluenceBat)
                     midD = (predD + confluenceBat) / 2.0
                     if isBullish
-                        f_drawPredictedD("Potential Bullish Bat (conf.)", color.new(color.blue, 0), X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                        f_drawRangeAroundPrice(predictedD_bar, midD, color.blue, rangePercent)
+                        f_drawPredictedD("Potential Bullish Bat (conf.)", colorPartialBull, X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                        f_drawRangeAroundPrice(predictedD_bar, midD, colorPartialBull, rangePercent)
                     if isBearish
-                        f_drawPredictedD("Potential Bearish Bat (conf.)", color.new(color.maroon, 0), X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                        f_drawRangeAroundPrice(predictedD_bar, midD, color.maroon, rangePercent)
+                        f_drawPredictedD("Potential Bearish Bat (conf.)", colorPartialBear, X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                        f_drawRangeAroundPrice(predictedD_bar, midD, colorPartialBear, rangePercent)
             else
                 if isBullish
-                    f_drawPredictedD("Potential Bullish Bat", color.new(color.blue, 0), X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, predD, color.blue, rangePercent)
+                    f_drawPredictedD("Potential Bullish Bat", colorPartialBull, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, predD, colorPartialBull, rangePercent)
                 if isBearish
-                    f_drawPredictedD("Potential Bearish Bat", color.new(color.maroon, 0), X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, predD, color.maroon, rangePercent)
+                    f_drawPredictedD("Potential Bearish Bat", colorPartialBear, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, predD, colorPartialBear, rangePercent)
 
     // -------------------- PREDYKCYJNY BUTTERFLY -----------------------
     isPotentialButterfly = (ratioAB >= (0.786 - tol) and ratioAB <= (0.786 + tol)) and (ratioBC >= (0.382 - tol) and ratioBC <= (0.886 + tol))
@@ -407,18 +421,18 @@ else if array.size(pivots) == 4
                 if not na(confluenceBut)
                     midD = (predD + confluenceBut) / 2.0
                     if isBullish
-                        f_drawPredictedD("Potential Bullish Butterfly (conf.)", color.new(color.orange, 0), X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                        f_drawRangeAroundPrice(predictedD_bar, midD, color.orange, rangePercent)
+                        f_drawPredictedD("Potential Bullish Butterfly (conf.)", colorPartialBull, X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                        f_drawRangeAroundPrice(predictedD_bar, midD, colorPartialBull, rangePercent)
                     if isBearish
-                        f_drawPredictedD("Potential Bearish Butterfly (conf.)", color.new(color.fuchsia, 0), X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                        f_drawRangeAroundPrice(predictedD_bar, midD, color.fuchsia, rangePercent)
+                        f_drawPredictedD("Potential Bearish Butterfly (conf.)", colorPartialBear, X, A, B, C, midD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                        f_drawRangeAroundPrice(predictedD_bar, midD, colorPartialBear, rangePercent)
             else
                 if isBullish
-                    f_drawPredictedD("Potential Bullish Butterfly", color.new(color.orange, 0), X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, predD, color.orange, rangePercent)
+                    f_drawPredictedD("Potential Bullish Butterfly", colorPartialBull, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, predD, colorPartialBull, rangePercent)
                 if isBearish
-                    f_drawPredictedD("Potential Bearish Butterfly", color.new(color.fuchsia, 0), X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                    f_drawRangeAroundPrice(predictedD_bar, predD, color.fuchsia, rangePercent)
+                    f_drawPredictedD("Potential Bearish Butterfly", colorPartialBear, X, A, B, C, predD, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                    f_drawRangeAroundPrice(predictedD_bar, predD, colorPartialBear, rangePercent)
 
     // -------------------- PREDYKCYJNY SHARK ---------------------------
     isPotentialShark = (ratioAB >= (0.5 - tol) and ratioAB <= (0.5 + tol))
@@ -439,30 +453,25 @@ else if array.size(pivots) == 4
                 X + 1.11 * (A - X)
 
             if isBullish
-                // 1
-                f_drawPredictedD("Potential Bullish Shark(1)", color.new(color.purple, 0), X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark, color.purple, rangePercent)
-                // 2
-                f_drawPredictedD("Potential Bullish Shark(2)", color.new(color.purple, 0), X, A, B, C, predDShark2, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark2, color.purple, rangePercent)
-                // 3
-                f_drawPredictedD("Potential Bullish Shark(3)", color.new(color.purple, 0), X, A, B, C, predDShark3, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark3, color.purple, rangePercent)
+                f_drawPredictedD("Potential Bullish Shark(1)", colorPartialBull, X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark, colorPartialBull, rangePercent)
+                f_drawPredictedD("Potential Bullish Shark(2)", colorPartialBull, X, A, B, C, predDShark2, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark2, colorPartialBull, rangePercent)
+                f_drawPredictedD("Potential Bullish Shark(3)", colorPartialBull, X, A, B, C, predDShark3, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark3, colorPartialBull, rangePercent)
 
             if isBearish
-                f_drawPredictedD("Potential Bearish Shark(1)", color.new(color.navy, 0), X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark, color.navy, rangePercent)
-
-                f_drawPredictedD("Potential Bearish Shark(2)", color.new(color.navy, 0), X, A, B, C, predDShark2, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark2, color.navy, rangePercent)
-
-                f_drawPredictedD("Potential Bearish Shark(3)", color.new(color.navy, 0), X, A, B, C, predDShark3, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark3, color.navy, rangePercent)
+                f_drawPredictedD("Potential Bearish Shark(1)", colorPartialBear, X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark, colorPartialBear, rangePercent)
+                f_drawPredictedD("Potential Bearish Shark(2)", colorPartialBear, X, A, B, C, predDShark2, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark2, colorPartialBear, rangePercent)
+                f_drawPredictedD("Potential Bearish Shark(3)", colorPartialBear, X, A, B, C, predDShark3, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark3, colorPartialBear, rangePercent)
         else
             if isBullish
-                f_drawPredictedD("Potential Bullish Shark", color.new(color.purple, 0), X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark, color.purple, rangePercent)
+                f_drawPredictedD("Potential Bullish Shark", colorPartialBull, X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark, colorPartialBull, rangePercent)
 
             if isBearish
-                f_drawPredictedD("Potential Bearish Shark", color.new(color.navy, 0), X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
-                f_drawRangeAroundPrice(predictedD_bar, predDShark, color.navy, rangePercent)
+                f_drawPredictedD("Potential Bearish Shark", colorPartialBear, X, A, B, C, predDShark, X_bar, A_bar, B_bar, C_bar, predictedD_bar)
+                f_drawRangeAroundPrice(predictedD_bar, predDShark, colorPartialBear, rangePercent)
