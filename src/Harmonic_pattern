@@ -32,6 +32,8 @@ var pivotsTime   = array.new_int()
 ph = ta.pivothigh(high, pivotLen, pivotLen)
 pl = ta.pivotlow(low, pivotLen, pivotLen)
 
+
+
 // Wieloliniowe if-y (bez then)
 if not na(ph)
     array.push(pivots, ph)
