@@ -1,0 +1,252 @@
+//@version=5
+indicator("Harmonic Patterns (Bat, Butterfly, Gartley, Shark) + Targets", overlay=true)
+
+
+//============================================================
+// Ustawienia
+//============================================================
+FractalLen       = input.int(2, "Długość fraktala (okno lewo/prawo)")
+maxAllowedError  = input.float(0.10, "Maks. łączny błąd dopasowania")
+minPriceDiff     = input.float(0.0001, "Min dystans cenowy między pivotami")
+maxLookbackPivots= input.int(30, "Maks. liczba pivotów w tablicy")
+
+// Pine Script wymaga co najmniej jednej komendy rysującej
+plot(na, title="dummyPlot")
+
+//============================================================
+// Fraktale -> tablice pivotów
+//============================================================
+f_isFractalTop(_len) =>
+    h = high[_len]
+    isTop = true
+    for i = 1 to _len
+        if high[_len] <= high[_len - i] or high[_len] <= high[_len + i]
+            isTop := false
+    isTop
+
+f_isFractalBottom(_len) =>
+    l = low[_len]
+    isBottom = true
+    for i = 1 to _len
+        if low[_len] >= low[_len - i] or low[_len] >= low[_len + i]
+            isBottom := false
+    isBottom
+
+var pricePivotArray = array.new_float()
+var indexPivotArray = array.new_int()
+
+f_addPivot(_price) =>
+    lastIndex = array.size(pricePivotArray) - 1
+    if lastIndex >= 0
+        prevPrice = array.get(pricePivotArray, lastIndex)
+        if math.abs(prevPrice - _price) > minPriceDiff
+            array.push(pricePivotArray, _price)
+            array.push(indexPivotArray, bar_index - FractalLen)
+    else
+        array.push(pricePivotArray, _price)
+        array.push(indexPivotArray, bar_index - FractalLen)
+
+if bar_index > FractalLen
+    if f_isFractalTop(FractalLen)
+        f_addPivot(high[FractalLen])
+    if f_isFractalBottom(FractalLen)
+        f_addPivot(low[FractalLen])
+
+while array.size(pricePivotArray) > maxLookbackPivots
+    array.shift(pricePivotArray)
+    array.shift(indexPivotArray)
+
+//============================================================
+// Funkcje pomocnicze
+//============================================================
+
+// Oblicza 4 kluczowe ratio: AB, BC, CD, AD
+// (Uproszczone definicje – można modyfikować)
+f_calcRatios(xPrice, aPrice, bPrice, cPrice, dPrice) =>
+    xa = math.abs(aPrice - xPrice)
+    ab = if xa == 0.0
+        999999.0
+    else
+        math.abs(bPrice - aPrice) / xa
+    bcDist = math.abs(bPrice - cPrice)
+    bc = if math.abs(bPrice - aPrice) == 0.0
+        999999.0
+    else
+        bcDist / math.abs(bPrice - aPrice)
+    cdDist = math.abs(cPrice - dPrice)
+    cd = if bcDist == 0.0
+        999999.0
+    else
+        cdDist / bcDist
+    // AD = (|D - A| / |X - A|)
+    ad = if xa == 0.0
+        999999.0
+    else
+        math.abs(dPrice - aPrice) / xa
+
+    [ab, bc, cd, ad]
+
+// Prosty skoring w stylu "range check"; 
+// Gdy w range – błąd 0, inaczej 0.5 (możesz to udoskonalić).
+f_scoreRange(val, minV, maxV) =>
+    if val >= minV and val <= maxV
+        0.0
+    else
+        0.5
+
+// ---------------- Patterns Scoring (Bullish / Bearish) ----------------
+// Bullish Bat
+f_scoreBullBat(ab, bc, cd, ad) =>
+    eAB = f_scoreRange(ab, 0.382, 0.50)
+    eBC = f_scoreRange(bc, 0.382, 0.886)
+    eCD = f_scoreRange(cd, 1.618, 2.618)
+    eAD = f_scoreRange(ad, 0.85, 0.886)
+    eAB + eBC + eCD + eAD
+
+// Bearish Bat - te same range, inne parametry interpretacji
+f_scoreBearBat(ab, bc, cd, ad) =>
+    f_scoreBullBat(ab, bc, cd, ad)
+
+// Bullish Butterfly
+f_scoreBullButterfly(ab, bc, cd, ad) =>
+    // Przykładowe range'y
+    eAB = f_scoreRange(ab, 0.75, 0.79)
+    eBC = f_scoreRange(bc, 0.618, 0.886)
+    eCD = f_scoreRange(cd, 1.27, 1.618)
+    eAD = f_scoreRange(ad, 1.27, 1.618)
+    eAB + eBC + eCD + eAD
+
+f_scoreBearButterfly(ab, bc, cd, ad) =>
+    f_scoreBullButterfly(ab, bc, cd, ad)
+
+// Bullish Gartley
+f_scoreBullGartley(ab, bc, cd, ad) =>
+    eAB = f_scoreRange(ab, 0.60, 0.635)
+    eBC = f_scoreRange(bc, 0.618, 1.0)
+    eCD = f_scoreRange(cd, 1.27, 1.618)
+    eAD = f_scoreRange(ad, 0.75, 0.79)
+    eAB + eBC + eCD + eAD
+
+f_scoreBearGartley(ab, bc, cd, ad) =>
+    f_scoreBullGartley(ab, bc, cd, ad)
+
+// Bullish Shark
+f_scoreBullShark(ab, bc, cd, ad) =>
+    eAB = f_scoreRange(ab, 1.10, 1.20)   // np. overshoot
+    eBC = f_scoreRange(bc, 1.30, 1.80)
+    eCD = f_scoreRange(cd, 0.80, 1.20)
+    eAD = f_scoreRange(ad, 0.80, 0.94)   // bywa różnie
+    eAB + eBC + eCD + eAD
+
+f_scoreBearShark(ab, bc, cd, ad) =>
+    f_scoreBullShark(ab, bc, cd, ad)
+
+//============================================================
+// Funkcje do obliczania docelowego poziomu (target)
+//============================================================
+// Przyjmujemy (dla uproszczenia) docelowy poziom w byczym patternie:
+// T = D + 0.382 * |X - A|
+// W niedźwiedzim: T = D - 0.382 * |X - A|
+
+f_targetBull(xPrice, aPrice, dPrice) =>
+    waveXA = math.abs(aPrice - xPrice)
+    dPrice + 0.382 * waveXA
+
+f_targetBear(xPrice, aPrice, dPrice) =>
+    waveXA = math.abs(aPrice - xPrice)
+    dPrice - 0.382 * waveXA
+
+//============================================================
+// Rysowanie formacji + target
+//============================================================
+f_plotPatternAndTarget(xI, xP, aI, aP, bI, bP, cI, cP, dI, dP, patName, errVal, targetPrice) =>
+    // Rysujemy X->A->B->C->D
+    line.new(xI, xP, aI, aP, xloc=xloc.bar_index, extend=extend.none, color=color.white)
+    line.new(aI, aP, bI, bP, xloc=xloc.bar_index, extend=extend.none, color=color.white)
+    line.new(bI, bP, cI, cP, xloc=xloc.bar_index, extend=extend.none, color=color.white)
+    line.new(cI, cP, dI, dP, xloc=xloc.bar_index, extend=extend.none, color=color.white)
+
+    // Etykieta formacji
+    label.new(dI, dP, xloc=xloc.bar_index, style=label.style_label_up, text=patName + "\nErr=" + str.tostring(errVal, "#.###"),color=color.new(color.lime, 0), textcolor=color.black)
+
+    // Rysujemy linię docelową (od dI do dI+10)
+    line.new(dI, targetPrice,dI+10, targetPrice,xloc=xloc.bar_index, extend=extend.none, color=color.yellow, width=2)
+    // Etykieta targetu
+    label.new(dI+10, targetPrice, xloc=xloc.bar_index,style=label.style_label_up,text="Target\n" + str.tostring(targetPrice, format.mintick),color=color.new(color.yellow, 0), textcolor=color.black)
+
+//============================================================
+// Główna logika – przegląd 5 kolejnych pivotów
+//============================================================
+pivotCount = array.size(pricePivotArray)
+if pivotCount >= 5
+    // Przechodzimy tylko po 5 pivotach sekwencyjnych: i..i+4
+    for iPivot = 0 to pivotCount - 5
+        xID = iPivot
+        aID = iPivot + 1
+        bID = iPivot + 2
+        cID = iPivot + 3
+        dID = iPivot + 4
+
+        xPrice = array.get(pricePivotArray, xID)
+        aPrice = array.get(pricePivotArray, aID)
+        bPrice = array.get(pricePivotArray, bID)
+        cPrice = array.get(pricePivotArray, cID)
+        dPrice = array.get(pricePivotArray, dID)
+
+        xIndex = array.get(indexPivotArray, xID)
+        aIndex = array.get(indexPivotArray, aID)
+        bIndex = array.get(indexPivotArray, bID)
+        cIndex = array.get(indexPivotArray, cID)
+        dIndex = array.get(indexPivotArray, dID)
+
+        // Obliczamy ratio
+        [rAB, rBC, rCD, rAD] = f_calcRatios(xPrice, aPrice, bPrice, cPrice, dPrice)
+
+        // Scoring 8 patternów:
+        bullBatErr   = f_scoreBullBat(rAB, rBC, rCD, rAD)
+        bearBatErr   = f_scoreBearBat(rAB, rBC, rCD, rAD)
+        bullButtErr  = f_scoreBullButterfly(rAB, rBC, rCD, rAD)
+        bearButtErr  = f_scoreBearButterfly(rAB, rBC, rCD, rAD)
+        bullGartErr  = f_scoreBullGartley(rAB, rBC, rCD, rAD)
+        bearGartErr  = f_scoreBearGartley(rAB, rBC, rCD, rAD)
+        bullSharkErr = f_scoreBullShark(rAB, rBC, rCD, rAD)
+        bearSharkErr = f_scoreBearShark(rAB, rBC, rCD, rAD)
+
+        // Znajdź minimalny błąd i sprawdź, który pattern go ma
+        float minError = math.min(bullBatErr, math.min(bearBatErr,math.min(bullButtErr, math.min(bearButtErr,math.min(bullGartErr, math.min(bearGartErr,math.min(bullSharkErr, bearSharkErr)))))))
+        
+        if minError < maxAllowedError
+            // Ustalamy, który pattern = minError
+            string patName = ""
+            float patError = minError
+            bool isBull = false  // by wiedzieć, jak liczyć target
+
+            if minError == bullBatErr
+                patName := "Bullish Bat"
+                isBull := true
+            else if minError == bearBatErr
+                patName := "Bearish Bat"
+            else if minError == bullButtErr
+                patName := "Bullish Butterfly"
+                isBull := true
+            else if minError == bearButtErr
+                patName := "Bearish Butterfly"
+            else if minError == bullGartErr
+                patName := "Bullish Gartley"
+                isBull := true
+            else if minError == bearGartErr
+                patName := "Bearish Gartley"
+            else if minError == bullSharkErr
+                patName := "Bullish Shark"
+                isBull := true
+            else if minError == bearSharkErr
+                patName := "Bearish Shark"
+
+            // Liczymy docelowy poziom
+            // - Byczy: T = dPrice + 0.382*(|X-A|)
+            // - Niedźwiedzi: T = dPrice - 0.382*(|X-A|)
+            float theTarget = isBull ? f_targetBull(xPrice, aPrice, dPrice)
+                                     : f_targetBear(xPrice, aPrice, dPrice)
+
+            // Rysujemy pattern + target
+            f_plotPatternAndTarget(xIndex, xPrice,aIndex, aPrice,bIndex, bPrice,cIndex, cPrice,dIndex, dPrice,patName, patError, theTarget)
