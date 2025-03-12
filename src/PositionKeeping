@@ -1,0 +1,43 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © asawicki
+
+//@version=6
+indicator("Positon Keeping", "Positon Keeping", overlay = true)
+
+ColorLine = input.color(color.red, "Line")
+priceA = input.price(100,inline="0",confirm = true)
+timeA = input.time(timestamp("2024-07-15"), inline="0", confirm = true)
+
+priceB = input.price(100,inline="-100",confirm = true)
+timeB = input.time(timestamp("2024-07-15"), inline="-100", confirm = true)
+
+
+multiply= (priceA > priceB)? 1:-1
+
+
+
+positionRange = math.abs(priceA-priceB)
+
+draw_lines_and_labels(price, label_text) =>
+    line.new(x1 = timeA, y1 = price, x2 = timeA + 2147483647, y2 = price, xloc = xloc.bar_time, extend = extend.right, color = ColorLine)
+    label.new(x =  chart.right_visible_bar_time + 2147483647, y = price, text = label_text, xloc = xloc.bar_time, yloc = yloc.price, style = label.style_label_down, color = ColorLine, textcolor = color.white)
+    
+
+positionStopLos = priceB
+position0 = priceA
+position100 = priceA + positionRange * multiply
+position200 = priceA + positionRange * multiply * 2
+position300 = priceA + positionRange * multiply * 3
+position400 = priceA + positionRange * multiply * 4
+position500 = priceA + positionRange * multiply * 5
+
+
+// Draw initial lines and labels
+draw_lines_and_labels(position0, "0")
+draw_lines_and_labels(positionStopLos, "-100")
+draw_lines_and_labels(position100, "100" )
+draw_lines_and_labels(position200, "200" )
+draw_lines_and_labels(position300, "300" )
+draw_lines_and_labels(position400, "400" )
+draw_lines_and_labels(position500, "500" )
+

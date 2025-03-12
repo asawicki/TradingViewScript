@@ -14,7 +14,7 @@
 //                                                                                                                                                                                                          
 //
 //@version=5
-indicator('Multi Level ZigZag Harmonic Patterns and target', shorttitle='ML - ZigZag - HP', overlay=true, max_bars_back=1000, max_lines_count=500, max_labels_count=500)
+indicator('Multi Level ZigZag Harmonic Patterns and target', shorttitle='ML - ZigZag - HP - target ', overlay=true, max_bars_back=1000, max_lines_count=500, max_labels_count=500)
 
 max_array_size = input.int(200, step=20)
 useZigZagChain = input(false)
@@ -82,25 +82,25 @@ var zigzagpivots4 = array.new_float(0)
 var zigzagpivotbars4 = array.new_int(0)
 var zigzagpivotdirs4 = array.new_int(0)
 
-var wmlines1 = array.new_line(10)
+var wmlines1 = array.new_line(11)
 var wmtype1 = array.new_int(2, 1)
 var wmLabels1 = array.new_bool(13, false)
-var wmLabel1 = array.new_label(3)
+var wmLabel1 = array.new_label(4)
 
-var wmlines2 = array.new_line(10)
+var wmlines2 = array.new_line(11)
 var wmtype2 = array.new_int(2, 1)
 var wmLabels2 = array.new_bool(13, false)
-var wmLabel2 = array.new_label(3)
+var wmLabel2 = array.new_label(4)
 
-var wmlines3 = array.new_line(10)
+var wmlines3 = array.new_line(11)
 var wmtype3 = array.new_int(2, 1)
 var wmLabels3 = array.new_bool(13, false)
-var wmLabel3 = array.new_label(3)
+var wmLabel3 = array.new_label(4)
 
-var wmlines4 = array.new_line(10)
+var wmlines4 = array.new_line(11)
 var wmtype4 = array.new_int(2, 1)
 var wmLabels4 = array.new_bool(13, false)
-var wmLabel4 = array.new_label(3)
+var wmLabel4 = array.new_label(4)
 
 pivots(length) =>
     float phigh = ta.highestbars(high, length) == 0 ? high : na
@@ -266,6 +266,7 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
         abPrice = math.abs(a - b)
         cdPrice = math.abs(c - d)
         adPrice = math.abs(a - d) 
+        xdPrice = math.abs(x - d)
 
         time_ratio = cdTime / abTime
         price_ratio = cdPrice / abPrice
@@ -277,6 +278,7 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
 
         var float target1 = 0
         var float target2 = 0
+        var float target3 = 0
        
 
         if b < highPoint and b > lowPoint
@@ -286,6 +288,7 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
                 array.set(wmLabels, 0, true)
                 target1 := adPrice * 0.382 * dir + d
                 target2 := adPrice * 0.618 * dir + d
+                target3 := adPrice * 1 * dir + d
                 prefixTagetLabel:= 'Gar - '
             else
                 array.set(wmLabels, 0, false)
@@ -293,8 +296,9 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             if crab and xabRatio >= 0.382 * err_min and xabRatio <= 0.618 * err_max and abcRatio >= 0.382 * err_min and abcRatio <= 0.886 * err_max and (bcdRatio >= 2.24 * err_min and bcdRatio <= 3.618 * err_max or xadRatio >= 1.618 * err_min and xadRatio <= 1.618 * err_max)
                 wm_pattern := true
                 array.set(wmLabels, 1, true)
-                target1 := adPrice * 0.50 * dir + d
-                target2 := adPrice * 0.786 * dir + d
+                target1 := adPrice * 0.382 * dir + d
+                target2 := adPrice * 0.618 * dir + d
+                target3 := adPrice * 1 * dir + d
                 prefixTagetLabel:= 'Cra - '
             else
                 array.set(wmLabels, 1, false)
@@ -302,8 +306,9 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             if deepCrab and xabRatio >= 0.886 * err_min and xabRatio <= 0.886 * err_max and abcRatio >= 0.382 * err_min and abcRatio <= 0.886 * err_max and (bcdRatio >= 2.00 * err_min and bcdRatio <= 3.618 * err_max or xadRatio >= 1.618 * err_min and xadRatio <= 1.618 * err_max)
                 wm_pattern := true
                 array.set(wmLabels, 2, true)
-                target1 := adPrice * 0.50 * dir + d
-                target2 := adPrice * 0.786 * dir + d
+                target1 := adPrice * 0.382 * dir + d
+                target2 := adPrice * 0.618 * dir + d
+                target3 := adPrice * 1 * dir + d
                 prefixTagetLabel:= 'DCra - '
             else
                 array.set(wmLabels, 2, false)
@@ -311,8 +316,9 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             if bat and xabRatio >= 0.382 * err_min and xabRatio <= 0.50 * err_max and abcRatio >= 0.382 * err_min and abcRatio <= 0.886 * err_max and (bcdRatio >= 1.618 * err_min and bcdRatio <= 2.618 * err_max or xadRatio >= 0.886 * err_min and xadRatio <= 0.886 * err_max)
                 wm_pattern := true
                 array.set(wmLabels, 3, true)
-                target1 := adPrice * 0.50 * dir + d
-                target2 := adPrice * 0.786 * dir + d
+                target1 := adPrice * 0.382 * dir + d
+                target2 := adPrice * 0.618 * dir + d
+                target3 := adPrice * 1 * dir + d
                 prefixTagetLabel:= 'Bat - '
             else
                 array.set(wmLabels, 3, false)
@@ -320,8 +326,9 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             if butterfly and xabRatio >= 0.786 * err_min and xabRatio <= 0.786 * err_max and abcRatio >= 0.382 * err_min and abcRatio <= 0.886 * err_max and (bcdRatio >= 1.618 * err_min and bcdRatio <= 2.618 * err_max or xadRatio >= 1.272 * err_min and xadRatio <= 1.618 * err_max)
                 wm_pattern := true
                 array.set(wmLabels, 4, true)
-                target1 := adPrice * 0.50 * dir + d
-                target2 := adPrice * 0.786 * dir + d
+                target1 := adPrice * 0.382 * dir + d
+                target2 := adPrice * 0.618 * dir + d
+                target3 := adPrice * 1 * dir + d
                 prefixTagetLabel:= 'But - '
             else
                 array.set(wmLabels, 4, false)
@@ -330,7 +337,8 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
                 wm_pattern := true
                 array.set(wmLabels, 5, true)
                 target1 := cdPrice * 0.50 * dir + d
-                target2 := cdPrice * 0.786 * dir + d
+                target2 := cdPrice * 0.618 * dir + d
+                target3 := cdPrice * 1 * dir + d
                 prefixTagetLabel:= 'Sha - '
             else
                 array.set(wmLabels, 5, false)
@@ -338,8 +346,9 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             if cypher and xabRatio >= 0.382 * err_min and xabRatio <= 0.618 * err_max and abcRatio >= 1.13 * err_min and abcRatio <= 1.414 * err_max and (bcdRatio >= 1.272 * err_min and bcdRatio <= 2.00 * err_max or xadRatio >= 0.786 * err_min and xadRatio <= 0.786 * err_max)
                 wm_pattern := true
                 array.set(wmLabels, 6, true)
-                target1 := adPrice * 0.50 * dir + d
+                target1 := adPrice * 0.382 * dir + d
                 target2 := adPrice * 0.618 * dir + d
+                target3 := adPrice * 1 * dir + d
                 prefixTagetLabel:= 'Cyp - '
             else
                 array.set(wmLabels, 6, false)
@@ -348,12 +357,20 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
         if threeDrives and yxaRatio >= 0.618 * err_min and yxaRatio <= 0.618 * err_max and xabRatio >= 1.27 * err_min and xabRatio <= 1.618 * err_max and abcRatio >= 0.618 * err_min and abcRatio <= 0.618 * err_max and bcdRatio >= 1.27 * err_min and bcdRatio <= 1.618 * err_max
             wm_pattern := true
             array.set(wmLabels, 7, true)
+            target1 := xdPrice * 0.618 * dir + d
+            target2 := xdPrice  * dir + d
+            target3 := xdPrice * 1.618 * dir + d
+            prefixTagetLabel:= '3 drive - '
         else
             array.set(wmLabels, 7, false)
         //5-0
         if fiveZero and xabRatio >= 1.13 * err_min and xabRatio <= 1.618 * err_max and abcRatio >= 1.618 * err_min and abcRatio <= 2.24 * err_max and bcdRatio >= 0.5 * err_min and bcdRatio <= 0.5 * err_max
             wm_pattern := true
             array.set(wmLabels, 8, true)
+            target1 := cdPrice * 0.50 * dir + d
+            target2 := cdPrice * 0.618 * dir + d
+            target3 := cdPrice * 1 * dir + d
+            prefixTagetLabel:= '5-0 - '
         else
             array.set(wmLabels, 8, false)
         //ABCD Classic
@@ -362,6 +379,7 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             array.set(wmLabels, 9, true)
             target1 := adPrice * 0.382 * dir + d
             target2 := adPrice * 0.618 * dir + d
+            target3 := adPrice * 1 * dir + d
             prefixTagetLabel:= 'ABCD - '
         else
             array.set(wmLabels, 9, false)
@@ -371,6 +389,7 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             array.set(wmLabels, 10, true)
             target1 := adPrice * 0.382 * dir + d
             target2 := adPrice * 0.618 * dir + d
+            target3 := adPrice * 1 * dir + d
             prefixTagetLabel:= 'AB=CD - '
         else
             array.set(wmLabels, 10, false)
@@ -380,13 +399,28 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             array.set(wmLabels, 11, true)
             target1 := cdPrice * 0.382 * dir + d
             target2 := cdPrice * 0.618 * dir + d
+            target3 := cdPrice * 1 * dir + d
             prefixTagetLabel:= 'ABEx - '
+            
         else
             array.set(wmLabels, 11, false)
         //Double Top/Bottom
         if doubleBottomTop and (dDir == 1 and bDir == 2 and cDir == -1 or dDir == -1 and bDir == -2 and cDir == 1) and riskPerReward < MaxRiskPerReward
             double_pattern := true
             array.set(wmLabels, 12, true)
+            prefixTagetLabel:= 'DTop - '
+            neckline = c  // poziom szyi formacji double top/bottom
+            patternHeight = math.abs(b - neckline)
+
+            // Target 1 - klasyczny (100% wysokości formacji)
+            target1 := neckline + patternHeight * dir
+
+            // Target 2 – poziom 127.2% wysokości formacji
+            target2 := neckline + patternHeight * 1.272 * dir
+
+            // opcjonalnie Target 3 (161.8%)
+            target3 := neckline + patternHeight * 1.618 * dir
+            
         else
             array.set(wmLabels, 12, false)
 
@@ -404,9 +438,11 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             line.delete(array.get(wmlines, 7))
             line.delete(array.get(wmlines, 8))
             line.delete(array.get(wmlines, 9))
+            line.delete(array.get(wmlines, 10))
             label.delete(array.get(wmlabel, 0))
             label.delete(array.get(wmlabel, 1))
             label.delete(array.get(wmlabel, 2))
+            label.delete(array.get(wmlabel, 3))
             cancelW := true
             cancelW
 
@@ -414,9 +450,13 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             line.delete(array.get(wmlines, 1))
             line.delete(array.get(wmlines, 2))
             line.delete(array.get(wmlines, 3))
+            line.delete(array.get(wmlines, 4))
+            line.delete(array.get(wmlines, 5))
+            line.delete(array.get(wmlines, 6))
             label.delete(array.get(wmlabel, 0))
             label.delete(array.get(wmlabel, 1))
             label.delete(array.get(wmlabel, 2))
+            label.delete(array.get(wmlabel, 3))
             cancelA := true
             cancelA
 
@@ -437,10 +477,13 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             ac = line.new(y1=a, y2=c, x1=aBar, x2=cBar, color=zigzagColor, width=zigzagWidth, style=zigzagStyle)
             target_1 = line.new(dBar, target1, dBar+10, target1, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
             target_2 = line.new(dBar, target2, dBar+10, target2, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
+            target_3 = line.new(dBar, target3, dBar+10, target3, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
             targetLabel1 = label.new(dBar+10,target1, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="1- " + prefixTagetLabel + str.tostring(target1, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
             array.set(wmlabel, 1, targetLabel1)
             targetLabel2 = label.new(dBar+10,target2, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="2- " + prefixTagetLabel + str.tostring(target2, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
             array.set(wmlabel, 2, targetLabel2)
+            targetLabel3 = label.new(dBar+10,target3, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="3- " + prefixTagetLabel + str.tostring(target3, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            array.set(wmlabel, 3, targetLabel3)
             array.set(wmlines, 0, xa)
             array.set(wmlines, 1, ab)
             array.set(wmlines, 2, bc)
@@ -451,6 +494,7 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             array.set(wmlines, 7, ac)
             array.set(wmlines,8, target_1)
             array.set(wmlines,9, target_2)
+            array.set(wmlines,10, target_3)
             array.set(wmtype, 0, dir)
         if abcd_pattern and not wm_pattern
             ab = line.new(y1=a, y2=b, x1=aBar, x2=bBar, color=zigzagColor, width=zigzagWidth, style=zigzagStyle)
@@ -458,18 +502,36 @@ detect_harmonic_pattern(zigzagpivots, zigzagpivotbars, zigzagpivotdirs, wmlines,
             cd = line.new(y1=c, y2=d, x1=cBar, x2=dBar, color=zigzagColor, width=zigzagWidth, style=zigzagStyle)
             target_1 = line.new(dBar, target1, dBar+10, target1, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
             target_2 = line.new(dBar, target2, dBar+10, target2, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
-            targetLabel1 = label.new(dBar+10,target1, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text=prefixTagetLabel + str.tostring(target1, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            target_3 = line.new(dBar, target3, dBar+10, target3, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
+            targetLabel1 = label.new(dBar+10,target1, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="1- " + prefixTagetLabel + str.tostring(target1, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
             array.set(wmlabel, 1, targetLabel1)
-            targetLabel2 = label.new(dBar+10,target2, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text=prefixTagetLabel + str.tostring(target2, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            targetLabel2 = label.new(dBar+10,target2, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="2- " + prefixTagetLabel + str.tostring(target2, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
             array.set(wmlabel, 2, targetLabel2)
+            targetLabel3 = label.new(dBar+10,target3, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="3- " + prefixTagetLabel + str.tostring(target3, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            array.set(wmlabel, 3, targetLabel3)
             array.set(wmlines, 1, ab)
             array.set(wmlines, 2, bc)
             array.set(wmlines, 3, cd)
+            array.set(wmlines, 4, target_1)
+            array.set(wmlines, 5, target_2)
+            array.set(wmlines, 6, target_3)
             array.set(wmtype, 0, dir)
         if double_pattern and not wm_pattern
             bd = line.new(y1=b, y2=d, x1=bBar, x2=dBar, color=zigzagColor, width=zigzagWidth, style=zigzagStyle)
             array.set(wmlines, 5, bd)
             array.set(wmtype, 0, dir)
+            target_1 = line.new(dBar, target1, dBar+10, target1, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
+            array.set(wmlines, 6, target_1)
+            targetLabel1 = label.new(dBar+10,target1, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="1- " + prefixTagetLabel + str.tostring(target1, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            array.set(wmlabel, 1, targetLabel1)
+            target_2 = line.new(dBar, target2, dBar+10, target2, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
+            array.set(wmlines, 7, target_2)
+            targetLabel2 = label.new(dBar+10,target2, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="2- " + prefixTagetLabel + str.tostring(target2, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            array.set(wmlabel, 2, targetLabel2)
+            target_3 = line.new(dBar, target3, dBar+10, target3, color=dir > 0 ? bullishColor : bearishColor, width=1, style=zigzagStyle)
+            array.set(wmlines, 8, target_3)
+            targetLabel3 = label.new(dBar+10,target3, xloc=xloc.bar_index,style=dir < 1 ? label.style_label_down : label.style_label_up,text="3- " + prefixTagetLabel + str.tostring(target3, format.mintick),color=dir > 0 ? bullishColor : bearishColor, textcolor=color.black)
+            array.set(wmlabel, 3, targetLabel3)
 
         if wm_pattern or abcd_pattern or double_pattern
             array.set(wmlabel, 0, get_harmonic_label(wmLabels, dir, d, dBar))

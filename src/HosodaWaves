@@ -1,0 +1,67 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © asawicki
+
+//@version=5
+indicator("Hosoda waves", "Hosoda waves", overlay = true)
+
+Rad = input.int(1, "Mutiply hosoda waves")
+
+ColorLine = input.color(color.blue, "Line")
+priceA = input.price(100,inline="PointA",confirm = true)
+timeA = input.time(timestamp("2024-07-15"), inline="PointA", confirm = true)
+
+priceB = input.price(100,inline="PointB",confirm = true)
+timeB = input.time(timestamp("2024-07-15"), inline="PointB", confirm = true)
+line.new(timeA,priceA,timeB,priceB, xloc = xloc.bar_time, color = ColorLine)
+
+priceC = input.price(100,inline="PointC",confirm = true)
+timeC = input.time(timestamp("2024-07-15"), inline="PointC", confirm = true)
+line.new(timeB,priceB,timeC,priceC, xloc = xloc.bar_time, color = ColorLine)
+
+multiply= (priceB > priceA)? 1:-1
+
+label.new(timeA, priceA, "A", xloc=xloc.bar_time,yloc = (multiply>0)? yloc.belowbar:yloc.abovebar, style=label.style_none, color=ColorLine)
+label.new(timeB, priceB, "B", xloc=xloc.bar_time,yloc = (multiply<0)? yloc.belowbar:yloc.abovebar, style=label.style_none, color=ColorLine)
+label.new(timeC, priceC, "C", xloc=xloc.bar_time,yloc = (multiply>0)? yloc.belowbar:yloc.abovebar, style=label.style_none, color=ColorLine)
+
+HosodaTpV = priceB + (multiply*math.abs(priceB-priceC))
+HosodaTpN = priceC + (multiply*math.abs(priceB - priceA))
+HosodaTpE = priceB + (multiply*math.abs(priceB-priceA))
+HosodaTpNT = priceC + (multiply*math.abs(priceC - priceA))
+
+HosodaVpNd2 = (HosodaTpV + HosodaTpN)/2
+HosodaNpNTd2 = (HosodaTpN+HosodaTpNT)/2
+
+//j = 2*multiply
+
+// Helper function to draw lines and labels
+draw_lines_and_labels(price, label_text) =>
+    line.new(x1 = timeA, y1 = price, x2 = timeA + 2147483647, y2 = price, xloc = xloc.bar_time, extend = extend.right, color = ColorLine)
+    label.new(x = timeA, y = price, text = label_text, xloc = xloc.bar_time, yloc = yloc.price, style = label.style_label_down, color = ColorLine, textcolor = color.white)
+    
+
+// Draw initial lines and labels
+draw_lines_and_labels(HosodaTpN, "N=" + str.tostring(HosodaTpN))
+draw_lines_and_labels(HosodaTpV, "V=" + str.tostring(HosodaTpV))
+draw_lines_and_labels(HosodaTpE, "E=" + str.tostring(HosodaTpE))
+draw_lines_and_labels(HosodaTpNT, "NT=" + str.tostring(HosodaTpNT))
+draw_lines_and_labels(HosodaVpNd2, "(V+N)/2=" + str.tostring(HosodaVpNd2))
+draw_lines_and_labels(HosodaNpNTd2, "(N+NT)/2=" + str.tostring(HosodaNpNTd2))
+
+// Loop for Rad iterations
+if (Rad > 1)
+    for i = 2 to Rad
+        HosodaTpV := priceB + (i * multiply * math.abs(priceB - priceC))
+        HosodaTpN := priceC + (i * multiply * math.abs(priceB - priceA))
+        HosodaTpE := priceB + (i * multiply * math.abs(priceB - priceA))
+        HosodaTpNT := priceC + (i * multiply * math.abs(priceC - priceA))
+        HosodaVpNd2 := (HosodaTpV + HosodaTpN) / 2
+        HosodaNpNTd2 := (HosodaTpN + HosodaTpNT) / 2
+
+        //Draw lines and labels for each iteration
+        draw_lines_and_labels(HosodaTpN, "N(" + str.tostring(i) + ")=" + str.tostring(HosodaTpN))
+        draw_lines_and_labels(HosodaTpV, "V(" + str.tostring(i) + ")=" + str.tostring(HosodaTpV))
+        draw_lines_and_labels(HosodaTpE, "E(" + str.tostring(i) + ")=" + str.tostring(HosodaTpE))
+        draw_lines_and_labels(HosodaTpNT, "NT(" + str.tostring(i) + ")=" + str.tostring(HosodaTpNT))
+        draw_lines_and_labels(HosodaVpNd2, "(V+N)/2(" + str.tostring(i) + ")=" + str.tostring(HosodaVpNd2))
+        draw_lines_and_labels(HosodaNpNTd2, "(N+NT)/2(" + str.tostring(i) + ")=" + str.tostring(HosodaNpNTd2))
